@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import socket
+import time
 from datetime import datetime
 
 HOST = "127.0.0.1"
@@ -14,7 +15,7 @@ INCORRECT_PATH = "Такой путь не существует"
 CORRECT_PASSWORD = "Вход выполнен"
 LACK_OF_MEMORY = "Недостаточно места на диске"
 ENCODING = "UTF-8"
-BUFFER_SIZE = 1024 * 16
+BUFFER_SIZE = 1024
 AUTH = "auth.json"
 SEP = os.sep
 WORKING_DIRECTORY = os.getcwd() + SEP + "docs"
@@ -59,7 +60,7 @@ def cd(path, isAdmin=False):
     if (checkPath(path) or isAdmin is True) and os.path.isdir(path):
         os.chdir(path)
         CURRENT_PATH = os.getcwd()
-        return ""
+        return "\n"
     else:
         return INCORRECT_PATH + "\n"
 
@@ -70,7 +71,7 @@ def mkdir(path):
         if dirSize(ROOT) > MAX_DIRECTORY_SIZE:
             rm(path)
             return LACK_OF_MEMORY + "\n"
-        return f"Всего места: {MAX_DIRECTORY_SIZE}\nСвободно: {MAX_DIRECTORY_SIZE - dirSize(ROOT)}\n"
+        return "\n"
     else:
         return INCORRECT_PATH + "\n"
 
@@ -78,7 +79,7 @@ def mkdir(path):
 def mv(source, destination):
     if checkPath(source) and checkPath(destination) and os.path.exists(source):
         shutil.move(source, destination)
-        return ""
+        return "\n"
     else:
         return INCORRECT_PATH + "\n"
 
@@ -89,16 +90,13 @@ def rm(path):
             shutil.rmtree(path)
         else:
             os.remove(path)
-        return ""
+        return "\n"
     else:
         return INCORRECT_PATH + "\n"
 
 
 def cat(path):
     if checkPath(path) and os.path.exists(path):
-        with open(path, "r", encoding=ENCODING) as file:
-            for row in file:
-                print(row)
         return open(path, "r", encoding=ENCODING).read() + "\n"
     else:
         return INCORRECT_PATH + "\n"
@@ -112,7 +110,7 @@ def touch(path):
         if dirSize(ROOT) > MAX_DIRECTORY_SIZE:
             rm(path)
             return LACK_OF_MEMORY + "\n"
-        return f"Всего места: {MAX_DIRECTORY_SIZE}\nСвободно: {MAX_DIRECTORY_SIZE - dirSize(ROOT)}\n"
+        return "\n"
     else:
         return INCORRECT_PATH + "\n"
 
@@ -126,7 +124,7 @@ def write(*args):
             with open(path, "w", encoding=ENCODING) as file:
                 file.write(tempText.replace(text, "", (tempText.count(text) - 1)))
                 return LACK_OF_MEMORY + "\n"
-        return f"Всего места: {MAX_DIRECTORY_SIZE}\nСвободно: {MAX_DIRECTORY_SIZE - dirSize(ROOT)}\n"
+        return "\n"
     else:
         return INCORRECT_PATH + "\n"
 
@@ -137,24 +135,29 @@ def cp(source, destination):
         if dirSize(ROOT) > MAX_DIRECTORY_SIZE:
             rm(os.path.join(destination, source))
             return LACK_OF_MEMORY + "\n"
-        return f"Всего места: {MAX_DIRECTORY_SIZE}\nСвободно: {MAX_DIRECTORY_SIZE - dirSize(ROOT)}\n"
+        return "\n"
     else:
         return INCORRECT_PATH + "\n"
 
 
+def free():
+    return f"Всего места: {MAX_DIRECTORY_SIZE}\nСвободно: {MAX_DIRECTORY_SIZE - dirSize(ROOT)}\n"
+
+
 def help_():
-    return 'pwd - выводит путь текущего каталога\n' \
-           'ls DIRECTORY- выводит содержимое каталога\n' \
-           'cd DIRECTORY- изменяет текущий каталог\n' \
-           'mkdir DIRECTORY - создает каталог\n' \
-           'rm PATH - удаляет директорию или каталог\n' \
-           'mv SOURCE DESTINATION - перемещает или переименовывает файл\n' \
-           'cat FILE - выводит содержимое файла\n' \
-           'touch FILE - создает пустой файл\n' \
-           'write FILE TEXT - добавляет текст в файл\n' \
-           'cp SOURCE DESTINATION - копирует файл\n' \
-           'exit - разрыв соединения с сервером\n' \
-           'help - выводит справку по командам\n'
+    return "pwd - выводит путь текущего каталога\n" \
+           "ls DIRECTORY- выводит содержимое каталога\n" \
+           "cd DIRECTORY- изменяет текущий каталог\n" \
+           "mkdir DIRECTORY - создает каталог\n" \
+           "rm PATH - удаляет директорию или каталог\n" \
+           "mv SOURCE DESTINATION - перемещает или переименовывает файл\n" \
+           "cat FILE - выводит содержимое файла\n" \
+           "touch FILE - создает пустой файл\n" \
+           "write FILE TEXT - добавляет текст в файл\n" \
+           "cp SOURCE DESTINATION - копирует файл\n" \
+           "free - выводит информацию о памяти" \
+           "exit - разрыв соединения с сервером\n" \
+           "help - выводит справку по командам\n"
 
 
 def process(request):
@@ -169,7 +172,7 @@ def process(request):
 
     writeLog(LOG, f"Пользователю {LOGIN} отправлено '{response}'")
 
-    return response + LOGIN + ":" + pwd().replace("\n", "")
+    return response
 
 
 def readAuth(fileName, currentPath=os.getcwd()):
@@ -208,7 +211,7 @@ def handle(sock, conn):
     if LOGIN == ADMIN:
         LOGIN = "$" + LOGIN
 
-    send(conn, CORRECT_PASSWORD + "\n" + LOGIN + ":" + pwd().replace("\n", ""))
+    send(conn, CORRECT_PASSWORD + "\n" + LOGIN + ":" + pwd()[:-1] + ">")
     writeLog(LOG, f"Пользователь {LOGIN} авторизовался")
     while True:
         try:
@@ -217,6 +220,7 @@ def handle(sock, conn):
                 conn.close()
             response = process(request)
             send(conn, response)
+            send(conn, LOGIN + ":" + pwd()[:-1] + ">")
         except:
             break
 
@@ -286,6 +290,7 @@ COMMANDS = {
     "touch": touch,
     "write": write,
     "cp": cp,
+    "free": free,
     "help": help_
 }
 
