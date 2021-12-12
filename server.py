@@ -1,24 +1,10 @@
 import json
-import os
 import shutil
 import socket
-import time
 from datetime import datetime
 
-HOST = "127.0.0.1"
-PORT = 9090
-REQUEST_LOGIN = "Введите логин:"
-REQUEST_PASSWORD = "Введите пароль:"
-REQUEST_NEW_PASSWORD = "Введите новый пароль:"
-INCORRECT_PASSWORD = "Неверный пароль"
-INCORRECT_PATH = "Такой путь не существует"
-CORRECT_PASSWORD = "Вход выполнен"
-LACK_OF_MEMORY = "Недостаточно места на диске"
-ENCODING = "UTF-8"
-BUFFER_SIZE = 1024
-AUTH = "auth.json"
-SEP = os.sep
-WORKING_DIRECTORY = os.getcwd() + SEP + "docs"
+from settings import *
+
 LOG = WORKING_DIRECTORY + SEP + "log.txt"
 ROOT = WORKING_DIRECTORY
 CURRENT_PATH = ROOT
@@ -59,7 +45,7 @@ def cd(path, isAdmin=False):
         path = ROOT
     if (checkPath(path) or isAdmin is True) and os.path.isdir(path):
         os.chdir(path)
-        CURRENT_PATH = os.getcwd()
+        CURRENT_PATH = os.path.join(CURRENT_PATH, path)
         return "\n"
     else:
         return INCORRECT_PATH + "\n"
@@ -200,7 +186,6 @@ def checkDirectory(login):
     if not os.path.exists(ROOT + SEP + login) or not os.path.isdir(ROOT + SEP + login):
         os.mkdir(login)
     ROOT += SEP + login
-    CURRENT_PATH = ROOT
     cd(login, True)
 
 
@@ -273,7 +258,7 @@ def auth(sock, conn):
 def accept(sock):
     while True:
         try:
-            conn, (addr, port) = sock.accept()
+            conn = sock.accept()[0]
             auth(sock, conn)
         except:
             continue
