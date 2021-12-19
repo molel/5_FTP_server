@@ -14,3 +14,6 @@ BUFFER_SIZE = 1024
 AUTH = "auth.json"
 SEP = os.sep
 WORKING_DIRECTORY = os.getcwd() + SEP + "docs"
+ADMIN = "admin"
+MAX_DIRECTORY_SIZE = 50
+LOG = WORKING_DIRECTORY + SEP + "log.txt"
